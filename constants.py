@@ -13,4 +13,4 @@ BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
 # Font
-FONT = pygame.font.Font(None, 36)
+#FONT = pygame.font.Font(None, 36)
