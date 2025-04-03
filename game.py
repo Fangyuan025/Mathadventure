@@ -1,13 +1,17 @@
 # game.py
 import pygame
 import time
+import threading
+
 
 from AttackEffect import AttackEffect
 from player import Player
 from monster import Monster
 from question import generate_question
-from utils import draw_text, generate_sound
+from utils import draw_text, generate_sound, draw_multiline_text
 from constants import *
+from local_llm import ask_local_llm
+from FeedbackManager import feedback_manager
 
 pygame.init()
 
@@ -42,6 +46,7 @@ def main():
     attack_effect_img = pygame.image.load("assets/attack_effect.png")
     attack_effect_img = pygame.transform.scale(attack_effect_img, (60, 60))  # 可调整大小
     attack_effect = None
+    waiting_for_next_question = False
 
     # Status: Map or Battle
     game_state = "map"
@@ -169,10 +174,19 @@ def main():
                         player.move("left")
                     elif event.key == pygame.K_RIGHT:
                         player.move("right")
-                    elif event.key == pygame.K_SPACE and not input_active:
-                        input_active = True
-                        user_input = ""
-                        question_start_time = time.time()
+                    elif event.key == pygame.K_SPACE:
+                        if feedback_manager.get():
+                            feedback_manager.set("")
+                            waiting_for_next_question = True  # 等待玩家再次按空格才进入新一题
+                        elif waiting_for_next_question:
+                            question, correct_answer = new_question()
+                            waiting_for_next_question = False
+                        elif not input_active:
+                            input_active = True
+                            user_input = ""
+                            question_start_time = time.time()
+
+
                     elif input_active:
                         if event.key == pygame.K_RETURN:
                             if user_input == str(correct_answer):
@@ -204,12 +218,26 @@ def main():
                             else:
                                 incorrect_sound.play()
                                 player.hp -= 1
+                                feedback_manager.set("Generating feedback, please wait...")
+
+                                def generate_feedback_async():
+                                    questions = question
+                                    correct_answers =correct_answer
+                                    print(f"The question is  {question}")
+                                    llm_answer = ask_local_llm(
+                                        f"The student answered {user_input} to the math problem '{questions}', "
+                                        f"but the correct answer is {correct_answers}. "
+                                        f"Why is the student's answer wrong?"
+                                    )
+                                    feedback_manager.set(llm_answer)
+                                threading.Thread(target=generate_feedback_async).start()
+
                                 if player.hp <= 0:
                                     return_to_map()
                                     player_pos = get_right_of_level(selected_level)
                                     game_state = "map"
                                     continue
-                            question, correct_answer = new_question()
+                            # question, correct_answer = new_question()
                             input_active = False
                         elif event.key == pygame.K_BACKSPACE:
                             user_input = user_input[:-1]
@@ -243,8 +271,13 @@ def main():
 
         elif game_state == "battle":
             player.draw(screen)
+
             if monster:
                 monster.draw(screen)
+
+            if feedback_manager.get():
+                draw_multiline_text(screen, feedback_manager.get(), WIDTH // 2 - 290, 20, color=BLACK)
+
 
             draw_text(screen, f"Level: {game_level}", BLACK, 10, 10)
             draw_text(screen, f"Score: {player.score}", BLACK, 10, 50)
