@@ -1,4 +1,4 @@
-# 🧮 Math Adventure Game
+# Math Adventure Game
 
 **Math Adventure** is an educational mini-game that combines math quizzes with RPG-style battles.  
 Players answer math questions to defeat monsters across multiple levels, each with unique backgrounds and effects.
