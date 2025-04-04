@@ -435,7 +435,7 @@ class Monster:
         else:
             # Normal health color based on monster type
             if self.is_boss:
-                hp_color = (220, 50, 50)  # Darker red for boss
+                hp_color = (180, 50, 180)  # Darker red for boss
             else:
                 hp_color = GREEN
 

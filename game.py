@@ -357,7 +357,14 @@ def main():
                 monster.draw(screen)
 
             if feedback_manager.get():
-                draw_multiline_text(screen, feedback_manager.get(), WIDTH // 2 - 290, 20, color=BLACK)
+                draw_multiline_text(
+                    screen,
+                    feedback_manager.get(),
+                    x=WIDTH // 2 - 200,
+                    y=50,
+                    color=BLACK,
+                    max_width=500
+                )
 
             draw_text(screen, f"Level: {game_level}", BLACK, 10, 10)
             draw_text(screen, f"Score: {player.score}", BLACK, 10, 50)
