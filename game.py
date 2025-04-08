@@ -60,6 +60,7 @@ def main():
     attack_effect_img = pygame.transform.scale(attack_effect_img, (60, 60))  # 可调整大小
     attack_effect = None
     waiting_for_next_question = False
+    question_damage = 1  # Default damage value for a question
 
     # Status: Map or Battle
     game_state = "map"
@@ -115,14 +116,15 @@ def main():
         return monster
 
     def new_question():
-        nonlocal question_start_time
+        nonlocal question_start_time, question_damage
         while True:
-            question, answer = generate_question(game_level)
+            question, answer, damage = generate_question(game_level)
             if question not in previous_questions[-3:]:
                 previous_questions.append(question)
                 if len(previous_questions) > 5:
                     previous_questions.pop(0)
                 question_start_time = time.time()
+                question_damage = damage  # Store the damage value
                 return question, answer
 
     def get_right_of_level(level_num, offset=40):
@@ -238,8 +240,11 @@ def main():
 
                                 start_pos = [player.x + player.width // 2, player.y]
                                 target_pos = [monster.x + monster.width // 2 - 30, monster.y + monster.height // 2 - 30]
-                                attack_effect = AttackEffect(start_pos, target_pos,
-                                                             attack_effect_img)  # effect location
+
+                                # Create attack effect with appropriate scale based on damage
+                                effect_scale = 0.8 + (question_damage * 0.2)  # Scale from 1.0 to 1.6 based on damage
+                                attack_effect = AttackEffect(start_pos, target_pos, attack_effect_img,
+                                                             scale_factor=effect_scale)
 
                                 waiting_for_attack_hit = True
                                 input_active = False
@@ -252,7 +257,7 @@ def main():
                                 monster_attack_start_time = time.time()
                                 monster_original_pos = (monster.x, monster.y)
                                 monster_attack_target = (
-                                player.x + player.width // 2 - 50, player.y + player.height // 2)
+                                    player.x + player.width // 2 - 50, player.y + player.height // 2)
                                 monster_attack_damage_pending = True
                                 input_active = False
                                 user_input = ""
@@ -291,9 +296,9 @@ def main():
                 if elapsed < attack_duration:
                     progress = elapsed / attack_duration
                     monster.x = monster_original_pos[0] + (
-                                monster_attack_target[0] - monster_original_pos[0]) * progress
+                            monster_attack_target[0] - monster_original_pos[0]) * progress
                     monster.y = monster_original_pos[1] + (
-                                monster_attack_target[1] - monster_original_pos[1]) * progress
+                            monster_attack_target[1] - monster_original_pos[1]) * progress
                 else:
                     # Reached player: apply damage and start returning
                     monster_attack_phase = 'returning'
@@ -320,9 +325,9 @@ def main():
                 if elapsed < return_duration:
                     progress = elapsed / return_duration
                     monster.x = monster_attack_target[0] + (
-                                monster_original_pos[0] - monster_attack_target[0]) * progress
+                            monster_original_pos[0] - monster_attack_target[0]) * progress
                     monster.y = monster_attack_target[1] + (
-                                monster_original_pos[1] - monster_attack_target[1]) * progress
+                            monster_original_pos[1] - monster_attack_target[1]) * progress
                 else:
                     # Reset monster position
                     monster.x, monster.y = monster_original_pos
@@ -375,6 +380,10 @@ def main():
                 draw_text(screen, f"Time: {time_remaining:.1f}s", RED, 600, 50)
                 draw_text(screen, question, BLACK, 300, 200)
                 draw_text(screen, f"Your answer: {user_input}", BLACK, 300, 300)
+
+                # Show the potential damage for this question
+                damage_color = GREEN if question_damage == 1 else YELLOW if question_damage == 2 else RED
+                draw_text(screen, f"Damage: {question_damage}", damage_color, 600, 90)
             else:
                 draw_text(screen, "Press SPACE to attack", BLACK, 300, 200)
 
@@ -388,11 +397,22 @@ def main():
                 if waiting_for_attack_hit and monster:
                     waiting_for_attack_hit = False
 
-                    # Use the new damage method instead of set_hp
-                    monster.damage(1)  # Directly reduce HP and handle animations
+                    # Use the damage value from the question
+                    monster.damage(question_damage)  # Apply variable damage based on question difficulty
                     monster.take_hit()  # Extra visual effects
-                    player.score += 10 * game_level
+
+                    # Adjust score based on question difficulty
+                    player.score += 10 * game_level * question_damage
                     questions_answered += 1
+
+                    # Create floating damage text
+                    if question_damage > 1:
+                        damage_text = f"{question_damage} DAMAGE!"
+                        damage_color = YELLOW if question_damage == 2 else RED
+                        draw_text(screen, damage_text, damage_color, monster.x + monster.width // 2 - 50,
+                                  monster.y - 40)
+                        pygame.display.update()  # Force immediate update to show the text
+                        pygame.time.delay(300)  # Show the text for a moment
 
                     if monster.hp <= 0:
                         # Start death animation
