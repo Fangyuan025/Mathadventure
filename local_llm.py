@@ -1,22 +1,44 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
-import torch
 import re
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print("Use device:", device)
+_generator = None
+_load_failed = False
 
-tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-1_5")
-model = AutoModelForCausalLM.from_pretrained("microsoft/phi-1_5")
 
-generator = pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    device=0 if device == "cuda" else -1
-)
+def _load_model():
+    global _generator, _load_failed
+    if _generator is not None or _load_failed:
+        return _generator
+
+    try:
+        from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+        import torch
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print("Use device:", device)
+
+        tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-1_5")
+        model = AutoModelForCausalLM.from_pretrained("microsoft/phi-1_5")
+
+        _generator = pipeline(
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            device=0 if device == "cuda" else -1
+        )
+        print("LLM model loaded successfully.")
+    except Exception as e:
+        print(f"Failed to load LLM model: {e}")
+        _load_failed = True
+
+    return _generator
+
 
 def ask_local_llm(prompt: str) -> str:
     print("LLM Request received, generating... " + prompt)
+
+    generator = _load_model()
+    if generator is None:
+        return "LLM not available. Check your internet connection."
 
     try:
         outputs = generator(

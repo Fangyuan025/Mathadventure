@@ -68,6 +68,9 @@ def generate_question(level):
     if operator == "+":
         answer = num1 + num2
     elif operator == "-":
+        # Ensure non-negative answer for kids
+        if num1 < num2:
+            num1, num2 = num2, num1
         answer = num1 - num2
     elif operator == "*":
         answer = num1 * num2

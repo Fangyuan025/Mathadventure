@@ -30,9 +30,11 @@ moving = False
 selected_level = None
 
 
+_FONT_36 = pygame.font.Font(None, 36)
+
+
 def draw_text(screen, text, color, x, y):
-    font = pygame.font.Font(None, 36)
-    text_surface = font.render(text, True, color)
+    text_surface = _FONT_36.render(text, True, color)
     screen.blit(text_surface, (x, y))
 
 
@@ -140,6 +142,7 @@ def main():
     input_active = False
     user_input = ""
     running = True
+    clock = pygame.time.Clock()
 
     while running:
         screen.fill(WHITE)
@@ -214,7 +217,6 @@ def main():
 
             # Battle mode button
             elif game_state == "battle":
-                screen.blit(battle_backgrounds.get(game_level, map_bg), (0, 0))
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_LEFT:
                         player.move("left")
@@ -284,8 +286,10 @@ def main():
                             input_active = False
                         elif event.key == pygame.K_BACKSPACE:
                             user_input = user_input[:-1]
-                        else:
-                            user_input += event.unicode
+                        elif event.key not in (pygame.K_BACKSPACE, pygame.K_RETURN, pygame.K_LEFT, pygame.K_RIGHT):
+                            ch = event.unicode
+                            if ch.isdigit():
+                                user_input += ch
 
         # Game logic update
         if game_state == "battle":
@@ -432,7 +436,7 @@ def main():
             monster.update()
 
         pygame.display.flip()
-        pygame.time.Clock().tick(60)
+        clock.tick(60)
 
     pygame.quit()
 

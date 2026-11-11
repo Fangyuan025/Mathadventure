@@ -77,7 +77,6 @@ class Monster:
         # Extra safety for bosses
         if self.is_boss:
             self.boss_hp_debug -= amount
-            print(f"BOSS DAMAGED: old={old_hp}, new={self.hp}, debug={self.boss_hp_debug}")
 
         # Set displayed_hp for animation
         self.displayed_hp = float(old_hp)
@@ -96,7 +95,6 @@ class Monster:
         # Extra safety for bosses
         if self.is_boss:
             self.boss_hp_debug = new_hp
-            print(f"BOSS SET_HP: old={old_hp}, new={new_hp}, debug={self.boss_hp_debug}")
 
         # Only animate if HP decreased
         if new_hp < old_hp:
@@ -172,7 +170,6 @@ class Monster:
 
             # Special debug check for bosses
             if abs(self.hp - self.boss_hp_debug) > 0.1:
-                print(f"WARNING: Boss HP mismatch: hp={self.hp}, debug={self.boss_hp_debug}")
                 self.hp = self.boss_hp_debug  # Force correction
         else:
             hp_animation_speed = 0.15
@@ -180,10 +177,6 @@ class Monster:
         # Always check for HP animation needs
         if abs(self.displayed_hp - self.hp) > 0.01:
             if self.displayed_hp > self.hp:
-                # Print info about boss HP animation
-                if self.is_boss:
-                    print(f"Boss HP animating: {self.displayed_hp} -> {self.hp}, speed={hp_animation_speed}")
-
                 self.displayed_hp -= hp_animation_speed
                 if self.displayed_hp < self.hp:
                     self.displayed_hp = float(self.hp)
